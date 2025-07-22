@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  macrocoach-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./data/macrocoach.db
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEBUG=true
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - db-setup
+
+  macrocoach-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    ports:
+      - "8501:8501"
+    environment:
+      - MACROCOACH_API_URL=http://macrocoach-api:8000
+    depends_on:
+      - macrocoach-api
+
+  db-setup:
+    image: alpine:latest
+    volumes:
+      - ./data:/data
+    command: sh -c "mkdir -p /data && touch /data/macrocoach.db"
+
+  demo-seeder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=sqlite:///./data/macrocoach.db
+    volumes:
+      - ./data:/app/data
+    command: python -m scripts.seed_demo_data
+    depends_on:
+      - db-setup
+
+volumes:
+  data:
