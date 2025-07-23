@@ -61,7 +61,7 @@ class PlateRecognizer:
         content = resp.choices[0].message.content or "{}"
         try:
             return json.loads(content)
-        except Exception:  # pragma: no cover - invalid json fallback
+        except json.JSONDecodeError:  # pragma: no cover - invalid json fallback
             return {
                 "kcal": 0,
                 "protein_g": 0,
