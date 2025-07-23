@@ -2,6 +2,7 @@
 FastAPI main application entry point.
 """
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -30,12 +31,46 @@ from .core.context import ApplicationContext
 # Load environment variables
 load_dotenv()
 
+# Global variables for agents
+context = None
+state_store = None
+planner = None
+meal_gen = None
+chat_ui = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan events."""
+    global context, state_store, planner, meal_gen, chat_ui
+    
+    # Startup
+    print("MacroCoach API starting up...")
+    context = ApplicationContext()
+    state_store = StateStoreAgent(context)
+    planner = PlannerAgent(context)
+    meal_gen = MealGenAgent(context)
+    chat_ui = ChatUIAgent(context, state_store, planner, meal_gen)
+    
+    await state_store.initialize()
+    print("MacroCoach API started successfully!")
+    
+    yield
+    
+    # Shutdown
+    print("MacroCoach API shutting down...")
+    if state_store:
+        await state_store.close()
+    print("MacroCoach API shut down.")
+
+
 app = FastAPI(
     title="MacroCoach API",
     description="An open-source coaching service for health metrics and nutrition",
     version="0.1.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # CORS middleware
@@ -47,16 +82,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize application context and agents
-context = ApplicationContext()
-state_store = StateStoreAgent(context)
-planner = PlannerAgent(context)
-meal_gen = MealGenAgent(context)
-chat_ui = ChatUIAgent(context, state_store, planner, meal_gen)
-
 
 def get_plate_recognizer() -> PlateRecognizer:
     """Dependency returning a PlateRecognizer instance."""
+    global context
+    if context is None:
+        raise HTTPException(status_code=500, detail="Application not initialized")
     return PlateRecognizer(context.openai_api_key)
 
 
@@ -68,20 +99,6 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     status: str = "success"
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize the application on startup."""
-    await state_store.initialize()
-    print("MacroCoach API started successfully!")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Clean up resources on shutdown."""
-    await state_store.close()
-    print("MacroCoach API shut down.")
 
 
 @app.get("/")
@@ -110,6 +127,10 @@ async def chat_endpoint(request: ChatRequest) -> ChatResponse:
     - /plan: Get tomorrow's plan
     - /swap <meal_id>: Generate new meal
     """
+    global chat_ui
+    if chat_ui is None:
+        raise HTTPException(status_code=500, detail="Application not initialized")
+    
     try:
         response = await chat_ui.process_message(request.message, request.user_id)
         return ChatResponse(response=response)
@@ -123,6 +144,10 @@ async def meal_image(
     recognizer: PlateRecognizer = Depends(get_plate_recognizer),
 ) -> Dict[str, Any]:
     """Estimate macros from an uploaded meal photo."""
+    global meal_gen
+    if meal_gen is None:
+        raise HTTPException(status_code=500, detail="Application not initialized")
+    
     if Image is None:
         raise HTTPException(status_code=500, detail="Pillow not installed")
     contents = await file.read()
@@ -134,6 +159,10 @@ async def meal_image(
 @app.get("/api/status/{user_id}")
 async def get_user_status(user_id: str) -> Dict[str, Any]:
     """Get detailed user status."""
+    global chat_ui
+    if chat_ui is None:
+        raise HTTPException(status_code=500, detail="Application not initialized")
+    
     try:
         status = await chat_ui.get_user_status(user_id)
         return status

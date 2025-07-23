@@ -3,6 +3,7 @@ Test fixtures and configuration.
 """
 
 import pytest
+import pytest_asyncio
 import tempfile
 import os
 from datetime import datetime
@@ -72,7 +73,7 @@ def test_health_metric() -> HealthMetric:
     )
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def state_store(test_context: ApplicationContext) -> StateStoreAgent:
     """Create and initialize a test state store."""
     store = StateStoreAgent(test_context)
