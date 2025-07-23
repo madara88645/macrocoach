@@ -10,7 +10,7 @@ from typing import Dict, Any
 import io
 try:
     from PIL import Image  # type: ignore
-except Exception:  # pragma: no cover - pillow optional
+except ImportError:  # pragma: no cover - pillow optional
     Image = None  # type: ignore
 import os
 try:
