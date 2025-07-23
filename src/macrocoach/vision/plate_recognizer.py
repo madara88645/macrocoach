@@ -9,12 +9,12 @@ from typing import Any, Dict
 
 try:
     from PIL import Image  # type: ignore
-except Exception:  # pragma: no cover - pillow optional
+except ImportError:  # pragma: no cover - pillow optional
     Image = None  # type: ignore
 
 try:
     import openai
-except Exception:  # pragma: no cover - openai optional
+except ImportError:  # pragma: no cover - openai optional
     openai = None  # type: ignore
 
 
