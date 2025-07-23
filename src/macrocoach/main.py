@@ -2,11 +2,16 @@
 FastAPI main application entry point.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 from typing import Dict, Any
+import io
+try:
+    from PIL import Image  # type: ignore
+except ImportError:  # pragma: no cover - pillow optional
+    Image = None  # type: ignore
 import os
 try:
     from dotenv import load_dotenv
@@ -19,6 +24,7 @@ from .agents.chat_ui_agent import ChatUIAgent
 from .agents.state_store_agent import StateStoreAgent
 from .agents.planner_agent import PlannerAgent
 from .agents.meal_gen_agent import MealGenAgent
+from .vision import PlateRecognizer
 from .core.context import ApplicationContext
 
 # Load environment variables
@@ -47,6 +53,11 @@ state_store = StateStoreAgent(context)
 planner = PlannerAgent(context)
 meal_gen = MealGenAgent(context)
 chat_ui = ChatUIAgent(context, state_store, planner, meal_gen)
+
+
+def get_plate_recognizer() -> PlateRecognizer:
+    """Dependency returning a PlateRecognizer instance."""
+    return PlateRecognizer(context.openai_api_key)
 
 
 class ChatRequest(BaseModel):
@@ -104,6 +115,20 @@ async def chat_endpoint(request: ChatRequest) -> ChatResponse:
         return ChatResponse(response=response)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/meal-image")
+async def meal_image(
+    file: UploadFile = File(...),
+    recognizer: PlateRecognizer = Depends(get_plate_recognizer),
+) -> Dict[str, Any]:
+    """Estimate macros from an uploaded meal photo."""
+    if Image is None:
+        raise HTTPException(status_code=500, detail="Pillow not installed")
+    contents = await file.read()
+    image = Image.open(io.BytesIO(contents))
+    result = await meal_gen.analyze_image(image, recognizer)
+    return result
 
 
 @app.get("/api/status/{user_id}")

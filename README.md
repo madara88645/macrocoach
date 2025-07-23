@@ -18,6 +18,7 @@ An open-source coaching service that pulls real-time health metrics and provides
 - **Adaptive Recommendations**: Generates personalized nutrition and training plans
 - **Conversational Interface**: Chat-based UI for easy interaction
 - **Privacy-First**: All user data stored locally (GDPR compliant)
+- **Plate-Cam**: Optional vision module to log meals using your camera
 
 ## 🏗️ Architecture
 
@@ -28,6 +29,11 @@ The system consists of 5 main agents:
 3. **PlannerAgent**: Calculates energy expenditure and sets macro targets
 4. **MealGenAgent**: Generates meal suggestions using LLM
 5. **ChatUIAgent**: Provides conversational interface via FastAPI
+6. **PlateRecognizer** (optional): Estimates meal macros from photos
+
+```text
+ [ Vision Flow Diagram Placeholder ]
+```
 
 ## 🚀 Quick Start
 

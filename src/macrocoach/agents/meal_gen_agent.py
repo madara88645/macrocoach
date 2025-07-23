@@ -368,8 +368,38 @@ class MealGenAgent:
             target_fat=target_fat,
             profile=profile
         )
-        
+
         return new_meal
+
+    async def analyze_image(
+        self,
+        image: Any,
+        recognizer,
+        profile: Optional[UserProfile] = None,
+    ) -> Dict[str, Any]:
+        """Analyze meal image and suggest ingredient swaps."""
+        macros = await recognizer.recognize_plate(image)
+        if profile is None:
+            ratios = {"protein": 30.0, "carbs": 40.0, "fat": 30.0}
+        else:
+            ratios = {
+                "protein": profile.protein_percent,
+                "carbs": profile.carbs_percent,
+                "fat": profile.fat_percent,
+            }
+
+        target_protein = macros["kcal"] * ratios["protein"] / 100 / 4
+        target_carbs = macros["kcal"] * ratios["carbs"] / 100 / 4
+        target_fat = macros["kcal"] * ratios["fat"] / 100 / 9
+
+        gap = {
+            "protein": target_protein - macros.get("protein_g", 0),
+            "carbs": target_carbs - macros.get("carbs_g", 0),
+            "fat": target_fat - macros.get("fat_g", 0),
+        }
+
+        swaps = self.get_ingredient_suggestions(gap)
+        return {"macros": macros, "swaps": swaps}
     
     def get_ingredient_suggestions(
         self, 
