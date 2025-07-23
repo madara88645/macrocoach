@@ -45,6 +45,8 @@ The system consists of 5 main agents:
 
 ### Installation
 
+#### Using Poetry (Recommended)
+
 ```bash
 # Clone the repository
 git clone <your-repo-url>
@@ -61,6 +63,26 @@ poetry run pytest
 
 # Start the demo
 make demo
+```
+
+#### Using pip (Fallback)
+
+If Poetry is not available in your environment:
+
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd macrocoach
+
+# Install dependencies
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+
+# Run tests
+python -m pytest
+
+# Start the server
+python -m src.macrocoach.main
 ```
 
 ### Environment Setup
@@ -87,6 +109,8 @@ LOG_LEVEL=INFO
 
 ## 🧪 Testing
 
+### Using Poetry
+
 ```bash
 # Run all tests with coverage
 poetry run pytest --cov=src --cov-report=html
@@ -98,12 +122,33 @@ poetry run pytest tests/test_state_store.py
 poetry run pytest -v
 ```
 
+### Using pip
+
+```bash
+# Run all tests with coverage
+python -m pytest --cov=src --cov-report=html
+
+# Run specific test file
+python -m pytest tests/test_state_store.py
+
+# Run with verbose output
+python -m pytest -v
+```
+
 ## 🔧 API Usage
 
 ### Start the server
 
+#### Using Poetry
+
 ```bash
 poetry run uvicorn src.macrocoach.main:app --reload
+```
+
+#### Using pip
+
+```bash
+python -m uvicorn src.macrocoach.main:app --reload
 ```
 
 ### Chat Interface
