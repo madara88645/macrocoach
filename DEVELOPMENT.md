@@ -4,7 +4,7 @@
 
 ### Prerequisites
 - Python 3.12+
-- Poetry (package manager)
+- Poetry (package manager) or pip
 - Git
 
 ### Setup
@@ -13,7 +13,12 @@
 ```bash
 git clone <your-repo-url>
 cd macrocoach
+
+# Option 1: With Poetry (recommended)
 poetry install
+
+# Option 2: With pip (alternative)
+pip install fastapi uvicorn pydantic sqlalchemy streamlit pandas numpy python-multipart aiofiles python-dotenv plotly requests pytest pytest-asyncio pytest-cov httpx openai
 ```
 
 2. **Set up environment:**
@@ -22,9 +27,14 @@ cp .env.example .env
 # Edit .env with your API keys
 ```
 
-3. **Initialize pre-commit hooks:**
+3. **Initialize pre-commit hooks (if using Poetry):**
 ```bash
 poetry run pre-commit install
+```
+
+4. **Run the quick test:**
+```bash
+python quick_test.py
 ```
 
 ### Development Commands
@@ -68,6 +78,56 @@ macrocoach/
 ├── scripts/             # Utility scripts
 └── docs/               # Documentation
 ```
+
+## Recent Improvements (v0.1.1)
+
+✅ **Modern FastAPI Implementation**
+- Updated from deprecated `@app.on_event` to modern `lifespan` context manager
+- Improved application startup and shutdown handling
+- Better dependency injection and error handling
+
+✅ **Fixed Test Infrastructure**
+- All 8 tests now passing (100% success rate)
+- Fixed async fixture configuration with `@pytest_asyncio.fixture`
+- Added missing test fixtures and improved test coverage (38%)
+
+✅ **Enhanced Reliability**
+- Application starts reliably and responds to all API endpoints
+- Proper OpenAI client initialization and error handling
+- Better environment variable configuration
+
+✅ **API Endpoints Fully Functional**
+- `/health` - Health check endpoint
+- `/` - Root endpoint with API information  
+- `/chat` - Chat interface for nutrition coaching
+- `/meal-image` - Image analysis for meal macros
+- `/docs` - Interactive API documentation
+
+### Testing
+
+Run the test suite:
+```bash
+# Run all tests
+python -m pytest tests/ -v
+
+# Run with coverage
+python -m pytest tests/ --cov=src --cov-report=html
+
+# Run specific test file
+python -m pytest tests/test_state_store.py -v
+```
+
+### Starting the Application
+
+```bash
+# Start the server
+uvicorn src.macrocoach.main:app --reload
+
+# Or using Python module
+python -m uvicorn src.macrocoach.main:app --reload
+```
+
+Visit http://localhost:8000/docs for interactive API documentation.
 
 ### API Endpoints
 
