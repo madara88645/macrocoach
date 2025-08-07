@@ -51,14 +51,12 @@ macrocoach/
 ├── src/macrocoach/           # Main application code
 │   ├── agents/               # Agent implementations
 │   ├── core/                 # Core models and context
-│   └── main.py              # FastAPI application
-├── dashboard/                # Streamlit dashboard
+│   ├── ui/                   # User interfaces (e.g., Streamlit dashboard)
+│   └── main.py               # FastAPI application
 ├── tests/                    # Test suite
 ├── scripts/                  # Utility scripts
-├── docs/                     # Documentation
-├── docker/                   # Docker configurations
 ├── .github/workflows/        # CI/CD pipelines
-└── data/                     # Sample data and schemas
+└── ...                       # Other project files
 ```
 
 ## 🚀 Quick Start
@@ -67,9 +65,8 @@ macrocoach/
    ```bash
    git clone https://github.com/yourusername/macrocoach.git
    cd macrocoach
-   python -m venv venv
-   source venv/bin/activate  # or .\venv\Scripts\activate on Windows
-   pip install -r requirements.txt
+   poetry install
+   poetry shell
    ```
 
 2. **Configure environment**:

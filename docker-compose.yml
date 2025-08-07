@@ -15,8 +15,6 @@ services:
       - DEBUG=true
     volumes:
       - ./data:/app/data
-    depends_on:
-      - db-setup
 
   macrocoach-dashboard:
     build:
@@ -29,15 +27,9 @@ services:
     depends_on:
       - macrocoach-api
 
-  db-setup:
-    image: alpine:latest
-    volumes:
-      - ./data:/data
-    command: sh -c "mkdir -p /data && touch /data/macrocoach.db"
-
   demo-seeder:
     build:
-      context: .
+      .
       dockerfile: Dockerfile
     environment:
       - DATABASE_URL=sqlite:///./data/macrocoach.db
@@ -45,7 +37,4 @@ services:
       - ./data:/app/data
     command: python -m scripts.seed_demo_data
     depends_on:
-      - db-setup
-
-volumes:
-  data:
+      - macrocoach-api

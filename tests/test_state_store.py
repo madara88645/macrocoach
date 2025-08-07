@@ -34,6 +34,7 @@ class TestStateStoreAgent:
         test_health_metric: HealthMetric
     ):
         """Test storing and retrieving health metrics."""
+        await state_store.initialize()
         # Store metric
         await state_store.store_health_metric(test_health_metric)
         
@@ -55,6 +56,7 @@ class TestStateStoreAgent:
         test_user_profile: UserProfile
     ):
         """Test storing and retrieving user profiles."""
+        await state_store.initialize()
         # Store profile
         await state_store.store_user_profile(test_user_profile)
         
@@ -73,6 +75,7 @@ class TestStateStoreAgent:
         state_store: StateStoreAgent
     ):
         """Test daily summary calculation."""
+        await state_store.initialize()
         today = datetime.now().replace(hour=12, minute=0, second=0, microsecond=0)
         
         # Store multiple metrics for today
@@ -121,6 +124,7 @@ class TestStateStoreAgent:
         state_store: StateStoreAgent
     ):
         """Test that date range filtering works correctly."""
+        await state_store.initialize()
         base_date = datetime.now().replace(hour=12, minute=0, second=0, microsecond=0)
         
         # Store metrics across multiple days
@@ -160,6 +164,7 @@ class TestStateStoreAgent:
         state_store: StateStoreAgent
     ):
         """Test that users' data is properly isolated."""
+        await state_store.initialize()
         timestamp = datetime.now()
         
         # Store metrics for two different users

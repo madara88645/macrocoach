@@ -73,8 +73,7 @@ def test_health_metric() -> HealthMetric:
 
 
 @pytest.fixture
-async def state_store(test_context: ApplicationContext) -> StateStoreAgent:
-    """Create and initialize a test state store."""
+def state_store(test_context: ApplicationContext) -> StateStoreAgent:
+    """Create a test state store."""
     store = StateStoreAgent(test_context)
-    await store.initialize()
     return store

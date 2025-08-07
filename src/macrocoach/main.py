@@ -124,7 +124,10 @@ async def meal_image(
 ) -> Dict[str, Any]:
     """Estimate macros from an uploaded meal photo."""
     if Image is None:
-        raise HTTPException(status_code=500, detail="Pillow not installed")
+        raise HTTPException(
+            status_code=501,
+            detail="Vision module not available. Please install with 'poetry install --extras vision'",
+        )
     contents = await file.read()
     image = Image.open(io.BytesIO(contents))
     result = await meal_gen.analyze_image(image, recognizer)

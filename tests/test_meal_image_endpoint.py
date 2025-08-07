@@ -20,20 +20,26 @@ class FakeImage:
         fp.write(b"stub")
 
 
-@pytest.mark.asyncio
-async def test_meal_image_endpoint(monkeypatch):
-    monkeypatch.setattr(
-        plate_recognizer, "openai", types.SimpleNamespace(AsyncOpenAI=lambda api_key: DummyClient())
-    )
+from src.macrocoach.main import get_plate_recognizer
+
+def test_meal_image_endpoint(monkeypatch):
+
+    def get_dummy_plate_recognizer():
+        recognizer = plate_recognizer.PlateRecognizer("key")
+        recognizer.client = DummyClient()
+        return recognizer
+
+    app.dependency_overrides[get_plate_recognizer] = get_dummy_plate_recognizer
+
     monkeypatch.setattr(plate_recognizer, "Image", types.SimpleNamespace(open=lambda *a, **k: FakeImage()))
     monkeypatch.setattr(
         "src.macrocoach.main.Image",
         types.SimpleNamespace(open=lambda *a, **k: FakeImage()),
     )
 
-    client = TestClient(app)
-    with open("tests/fixtures/chicken_rice.jpg", "rb") as f:
-        response = client.post("/meal-image", files={"file": ("chicken.jpg", f, "image/jpeg")})
+    with TestClient(app) as client:
+        with open("tests/fixtures/chicken_rice.jpg", "rb") as f:
+            response = client.post("/meal-image", files={"file": ("chicken.jpg", f, "image/jpeg")})
 
     assert response.status_code == 200
     data = response.json()
@@ -41,3 +47,5 @@ async def test_meal_image_endpoint(monkeypatch):
     assert data["macros"]["protein_g"] == 35
     assert data["macros"]["carbs_g"] == 55
     assert data["macros"]["fat_g"] == 12
+
+    app.dependency_overrides = {}

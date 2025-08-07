@@ -8,7 +8,7 @@ packages = [{include = "macrocoach", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
-fastapi = "^0.104.1"
+fastapi = "^0.111.0"
 uvicorn = "^0.24.0"
 pydantic = "^2.5.0"
 sqlalchemy = "^2.0.23"
@@ -16,7 +16,7 @@ streamlit = "^1.28.1"
 pandas = "^2.1.3"
 numpy = "^1.25.2"
 openai = "^1.3.0"
-python-multipart = "^0.0.6"
+python-multipart = "^0.0.7"
 aiofiles = "^23.2.1"
 python-dotenv = "^1.0.0"
 plotly = "^5.17.0"
@@ -30,6 +30,12 @@ ruff = "^0.1.6"
 black = "^23.11.0"
 mypy = "^1.7.0"
 pre-commit = "^3.5.0"
+
+[tool.poetry.group.vision]
+optional = true
+
+[tool.poetry.group.vision.dependencies]
+pillow = "^10.4.0"
 
 [build-system]
 requires = ["poetry-core"]
