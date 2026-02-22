@@ -2,8 +2,9 @@
 Tests for PlannerAgent - rule-based calorie and macro calculations.
 """
 
-import pytest
 from datetime import datetime
+
+import pytest
 
 from src.macrocoach.agents.planner_agent import PlannerAgent
 from src.macrocoach.core.models import HealthMetric
@@ -75,7 +76,9 @@ class TestPlannerAgent:
 
     def test_weight_trend_no_adjustment(self, planner):
         """Weight near target → 0 adjustment."""
-        adj = planner.get_weight_trend_adjustment([70.0, 70.2, 70.1], target_weight=70.0)
+        adj = planner.get_weight_trend_adjustment(
+            [70.0, 70.2, 70.1], target_weight=70.0
+        )
         assert adj == 0
 
     def test_weight_trend_insufficient_data(self, planner):
@@ -91,9 +94,7 @@ class TestPlannerAgent:
         """Computed macro calories should approximately equal target_kcal."""
         macros = planner.calculate_macro_targets(2000, test_user_profile)
         total_kcal = (
-            macros["protein_g"] * 4
-            + macros["carbs_g"] * 4
-            + macros["fat_g"] * 9
+            macros["protein_g"] * 4 + macros["carbs_g"] * 4 + macros["fat_g"] * 9
         )
         assert abs(total_kcal - 2000) < 5  # within 5 kcal rounding
 
@@ -129,7 +130,9 @@ class TestPlannerAgent:
         assert plan.target_kcal >= int(bmr)
 
     @pytest.mark.asyncio
-    async def test_generate_daily_plan_lose_weight_deficit(self, planner, test_user_profile):
+    async def test_generate_daily_plan_lose_weight_deficit(
+        self, planner, test_user_profile
+    ):
         """Lose-weight goal applies a calorie deficit."""
         test_user_profile.goal = "lose_weight"
         plan = await planner.generate_daily_plan(
@@ -144,7 +147,9 @@ class TestPlannerAgent:
         assert plan.target_kcal < tdee
 
     @pytest.mark.asyncio
-    async def test_generate_daily_plan_with_weight_trend(self, planner, test_user_profile):
+    async def test_generate_daily_plan_with_weight_trend(
+        self, planner, test_user_profile
+    ):
         """Weight trend adjustment is applied in the plan."""
         base = datetime.now()
         # Weights clearly above the 70 kg target → negative adjustment

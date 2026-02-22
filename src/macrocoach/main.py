@@ -2,18 +2,21 @@
 FastAPI main application entry point.
 """
 
+import io
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
+from typing import Any
+
+import uvicorn
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import uvicorn
-from typing import Dict, Any
-import io
+
 try:
     from PIL import Image  # type: ignore
 except ImportError:  # pragma: no cover - pillow optional
     Image = None  # type: ignore
 import os
+
 try:
     from dotenv import load_dotenv
 except ImportError:
@@ -21,13 +24,14 @@ except ImportError:
     def load_dotenv():
         pass
 
+
 from .agents.chat_ui_agent import ChatUIAgent
-from .agents.state_store_agent import StateStoreAgent
-from .agents.planner_agent import PlannerAgent
 from .agents.meal_gen_agent import MealGenAgent
-from .vision import PlateRecognizer
+from .agents.planner_agent import PlannerAgent
+from .agents.state_store_agent import StateStoreAgent
 from .core.context import ApplicationContext
 from .core.models import UserProfile
+from .vision import PlateRecognizer
 
 # Load environment variables
 load_dotenv()
@@ -85,17 +89,17 @@ class ChatResponse(BaseModel):
 
 
 @app.get("/")
-async def root() -> Dict[str, str]:
+async def root() -> dict[str, str]:
     """Root endpoint with basic info."""
     return {
         "message": "Welcome to MacroCoach API v0.1",
         "docs": "/docs",
-        "health": "/health"
+        "health": "/health",
     }
 
 
 @app.get("/health")
-async def health_check() -> Dict[str, str]:
+async def health_check() -> dict[str, str]:
     """Health check endpoint."""
     return {"status": "healthy", "version": "0.1.0"}
 
@@ -104,7 +108,7 @@ async def health_check() -> Dict[str, str]:
 async def chat_endpoint(request: ChatRequest) -> ChatResponse:
     """
     Main chat interface for user interactions.
-    
+
     Supported commands:
     - /status: Get daily summary
     - /plan: Get tomorrow's plan
@@ -114,22 +118,24 @@ async def chat_endpoint(request: ChatRequest) -> ChatResponse:
         response = await chat_ui.process_message(request.message, request.user_id)
         return ChatResponse(response=response)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/profile/{user_id}")
-async def create_or_update_profile(user_id: str, profile: UserProfile) -> Dict[str, Any]:
+async def create_or_update_profile(
+    user_id: str, profile: UserProfile
+) -> dict[str, Any]:
     """Create or update a user profile."""
     try:
         profile.user_id = user_id
         await state_store.store_user_profile(profile)
         return {"status": "ok", "user_id": user_id}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/profile/{user_id}")
-async def get_profile(user_id: str) -> Dict[str, Any]:
+async def get_profile(user_id: str) -> dict[str, Any]:
     """Retrieve user profile."""
     try:
         profile = await state_store.get_user_profile(user_id)
@@ -139,14 +145,14 @@ async def get_profile(user_id: str) -> Dict[str, Any]:
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/meal-image")
 async def meal_image(
     file: UploadFile = File(...),
     recognizer: PlateRecognizer = Depends(get_plate_recognizer),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Estimate macros from an uploaded meal photo."""
     if Image is None:
         raise HTTPException(status_code=500, detail="Pillow not installed")
@@ -157,24 +163,18 @@ async def meal_image(
 
 
 @app.get("/api/status/{user_id}")
-async def get_user_status(user_id: str) -> Dict[str, Any]:
+async def get_user_status(user_id: str) -> dict[str, Any]:
     """Get detailed user status."""
     try:
         status = await chat_ui.get_user_status(user_id)
         return status
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     host = os.getenv("HOST", "0.0.0.0")
     debug = os.getenv("DEBUG", "true").lower() == "true"
-    
-    uvicorn.run(
-        "main:app",
-        host=host,
-        port=port,
-        reload=debug,
-        log_level="info"
-    )
+
+    uvicorn.run("main:app", host=host, port=port, reload=debug, log_level="info")

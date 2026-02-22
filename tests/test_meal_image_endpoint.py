@@ -1,9 +1,10 @@
 import types
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 from fastapi.testclient import TestClient
+
 from src.macrocoach.main import app, get_plate_recognizer
-from src.macrocoach.vision import plate_recognizer
 
 
 class FakeImage:
@@ -31,7 +32,9 @@ async def test_meal_image_endpoint(monkeypatch):
     try:
         client = TestClient(app)
         with open("tests/fixtures/chicken_rice.jpg", "rb") as f:
-            response = client.post("/meal-image", files={"file": ("chicken.jpg", f, "image/jpeg")})
+            response = client.post(
+                "/meal-image", files={"file": ("chicken.jpg", f, "image/jpeg")}
+            )
     finally:
         app.dependency_overrides.clear()
 

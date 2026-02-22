@@ -2,14 +2,15 @@
 Tests for ChatUIAgent - command handling and natural language routing.
 """
 
-import pytest
 from datetime import datetime
 
+import pytest
+
 from src.macrocoach.agents.chat_ui_agent import ChatUIAgent
-from src.macrocoach.agents.state_store_agent import StateStoreAgent
-from src.macrocoach.agents.planner_agent import PlannerAgent
 from src.macrocoach.agents.meal_gen_agent import MealGenAgent
-from src.macrocoach.core.models import UserProfile, HealthMetric
+from src.macrocoach.agents.planner_agent import PlannerAgent
+from src.macrocoach.agents.state_store_agent import StateStoreAgent
+from src.macrocoach.core.models import HealthMetric
 
 
 @pytest.fixture
@@ -84,7 +85,11 @@ class TestChatUIAgentAdd:
     async def test_add_invalid(self, chat_agent):
         """Unrecognised add data returns helpful error."""
         response = await chat_agent.process_message("/add banana", "test_user")
-        assert "parse" in response.lower() or "format" in response.lower() or "❌" in response
+        assert (
+            "parse" in response.lower()
+            or "format" in response.lower()
+            or "❌" in response
+        )
 
 
 class TestChatUIAgentProfile:
@@ -113,7 +118,11 @@ class TestChatUIAgentProfile:
 
     async def test_profile_invalid_data(self, chat_agent):
         response = await chat_agent.process_message("/profile foo bar baz", "test_user")
-        assert "❌" in response or "parse" in response.lower() or "format" in response.lower()
+        assert (
+            "❌" in response
+            or "parse" in response.lower()
+            or "format" in response.lower()
+        )
 
 
 class TestChatUIAgentPlan:
@@ -127,14 +136,20 @@ class TestChatUIAgentPlan:
     async def test_plan_generates_output(self, chat_agent_with_profile):
         response = await chat_agent_with_profile.process_message("/plan", "test_user")
         # Should mention calories and at least one meal
-        assert "kcal" in response.lower() or "calorie" in response.lower() or "Calories" in response
+        assert (
+            "kcal" in response.lower()
+            or "calorie" in response.lower()
+            or "Calories" in response
+        )
 
 
 class TestChatUIAgentNaturalLanguage:
     """Tests for natural-language fallback."""
 
     async def test_natural_language_status_keywords(self, chat_agent):
-        response = await chat_agent.process_message("how am i doing today?", "test_user")
+        response = await chat_agent.process_message(
+            "how am i doing today?", "test_user"
+        )
         # Should route to status (either proper status or no-data message)
         assert response  # non-empty
 

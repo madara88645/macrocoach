@@ -4,8 +4,9 @@ Constraint: Turkish pantry items preferred.
 """
 
 import json
-from typing import List, Dict, Any, Optional
 from datetime import datetime
+from typing import Any
+
 import openai
 
 from ..core.context import ApplicationContext
@@ -17,55 +18,157 @@ class MealGenAgent:
     Generates meal suggestions using LLM to hit macro targets.
     Prioritizes Turkish cuisine and available pantry items.
     """
-    
+
     def __init__(self, context: ApplicationContext):
         self.context = context
         self.client = None
         if context.openai_api_key:
             openai.api_key = context.openai_api_key
             self.client = openai.OpenAI(api_key=context.openai_api_key)
-        
+
         # Turkish pantry staples (can be expanded)
         self.turkish_ingredients = {
             # Grains & Legumes
-            "bulgur": {"protein_per_100g": 12, "carbs_per_100g": 76, "fat_per_100g": 1.3, "kcal_per_100g": 342},
-            "kuru fasulye": {"protein_per_100g": 21, "carbs_per_100g": 60, "fat_per_100g": 1.1, "kcal_per_100g": 333},
-            "mercimek": {"protein_per_100g": 24, "carbs_per_100g": 60, "fat_per_100g": 1.1, "kcal_per_100g": 353},
-            "nohut": {"protein_per_100g": 19, "carbs_per_100g": 61, "fat_per_100g": 6.0, "kcal_per_100g": 364},
-            "pirinç": {"protein_per_100g": 7, "carbs_per_100g": 78, "fat_per_100g": 0.7, "kcal_per_100g": 365},
-            
+            "bulgur": {
+                "protein_per_100g": 12,
+                "carbs_per_100g": 76,
+                "fat_per_100g": 1.3,
+                "kcal_per_100g": 342,
+            },
+            "kuru fasulye": {
+                "protein_per_100g": 21,
+                "carbs_per_100g": 60,
+                "fat_per_100g": 1.1,
+                "kcal_per_100g": 333,
+            },
+            "mercimek": {
+                "protein_per_100g": 24,
+                "carbs_per_100g": 60,
+                "fat_per_100g": 1.1,
+                "kcal_per_100g": 353,
+            },
+            "nohut": {
+                "protein_per_100g": 19,
+                "carbs_per_100g": 61,
+                "fat_per_100g": 6.0,
+                "kcal_per_100g": 364,
+            },
+            "pirinç": {
+                "protein_per_100g": 7,
+                "carbs_per_100g": 78,
+                "fat_per_100g": 0.7,
+                "kcal_per_100g": 365,
+            },
             # Proteins
-            "tavuk göğsü": {"protein_per_100g": 31, "carbs_per_100g": 0, "fat_per_100g": 3.6, "kcal_per_100g": 165},
-            "dana eti": {"protein_per_100g": 26, "carbs_per_100g": 0, "fat_per_100g": 15, "kcal_per_100g": 250},
-            "balık": {"protein_per_100g": 22, "carbs_per_100g": 0, "fat_per_100g": 4, "kcal_per_100g": 120},
-            "yumurta": {"protein_per_100g": 13, "carbs_per_100g": 1.1, "fat_per_100g": 11, "kcal_per_100g": 155},
-            "lor peyniri": {"protein_per_100g": 11, "carbs_per_100g": 4, "fat_per_100g": 4, "kcal_per_100g": 98},
-            "beyaz peynir": {"protein_per_100g": 17, "carbs_per_100g": 1, "fat_per_100g": 21, "kcal_per_100g": 264},
-            
+            "tavuk göğsü": {
+                "protein_per_100g": 31,
+                "carbs_per_100g": 0,
+                "fat_per_100g": 3.6,
+                "kcal_per_100g": 165,
+            },
+            "dana eti": {
+                "protein_per_100g": 26,
+                "carbs_per_100g": 0,
+                "fat_per_100g": 15,
+                "kcal_per_100g": 250,
+            },
+            "balık": {
+                "protein_per_100g": 22,
+                "carbs_per_100g": 0,
+                "fat_per_100g": 4,
+                "kcal_per_100g": 120,
+            },
+            "yumurta": {
+                "protein_per_100g": 13,
+                "carbs_per_100g": 1.1,
+                "fat_per_100g": 11,
+                "kcal_per_100g": 155,
+            },
+            "lor peyniri": {
+                "protein_per_100g": 11,
+                "carbs_per_100g": 4,
+                "fat_per_100g": 4,
+                "kcal_per_100g": 98,
+            },
+            "beyaz peynir": {
+                "protein_per_100g": 17,
+                "carbs_per_100g": 1,
+                "fat_per_100g": 21,
+                "kcal_per_100g": 264,
+            },
             # Vegetables
-            "domates": {"protein_per_100g": 0.9, "carbs_per_100g": 3.9, "fat_per_100g": 0.2, "kcal_per_100g": 18},
-            "salatalık": {"protein_per_100g": 0.7, "carbs_per_100g": 3.6, "fat_per_100g": 0.1, "kcal_per_100g": 16},
-            "soğan": {"protein_per_100g": 1.1, "carbs_per_100g": 9.3, "fat_per_100g": 0.1, "kcal_per_100g": 40},
-            "biber": {"protein_per_100g": 1, "carbs_per_100g": 6, "fat_per_100g": 0.3, "kcal_per_100g": 31},
-            "patlıcan": {"protein_per_100g": 1, "carbs_per_100g": 6, "fat_per_100g": 0.2, "kcal_per_100g": 25},
-            "kabak": {"protein_per_100g": 1.2, "carbs_per_100g": 7, "fat_per_100g": 0.1, "kcal_per_100g": 17},
-            
+            "domates": {
+                "protein_per_100g": 0.9,
+                "carbs_per_100g": 3.9,
+                "fat_per_100g": 0.2,
+                "kcal_per_100g": 18,
+            },
+            "salatalık": {
+                "protein_per_100g": 0.7,
+                "carbs_per_100g": 3.6,
+                "fat_per_100g": 0.1,
+                "kcal_per_100g": 16,
+            },
+            "soğan": {
+                "protein_per_100g": 1.1,
+                "carbs_per_100g": 9.3,
+                "fat_per_100g": 0.1,
+                "kcal_per_100g": 40,
+            },
+            "biber": {
+                "protein_per_100g": 1,
+                "carbs_per_100g": 6,
+                "fat_per_100g": 0.3,
+                "kcal_per_100g": 31,
+            },
+            "patlıcan": {
+                "protein_per_100g": 1,
+                "carbs_per_100g": 6,
+                "fat_per_100g": 0.2,
+                "kcal_per_100g": 25,
+            },
+            "kabak": {
+                "protein_per_100g": 1.2,
+                "carbs_per_100g": 7,
+                "fat_per_100g": 0.1,
+                "kcal_per_100g": 17,
+            },
             # Fats & Nuts
-            "zeytinyağı": {"protein_per_100g": 0, "carbs_per_100g": 0, "fat_per_100g": 100, "kcal_per_100g": 884},
-            "tereyağı": {"protein_per_100g": 0.9, "carbs_per_100g": 0.1, "fat_per_100g": 81, "kcal_per_100g": 717},
-            "ceviz": {"protein_per_100g": 15, "carbs_per_100g": 14, "fat_per_100g": 65, "kcal_per_100g": 654},
-            "badem": {"protein_per_100g": 21, "carbs_per_100g": 22, "fat_per_100g": 49, "kcal_per_100g": 579}
+            "zeytinyağı": {
+                "protein_per_100g": 0,
+                "carbs_per_100g": 0,
+                "fat_per_100g": 100,
+                "kcal_per_100g": 884,
+            },
+            "tereyağı": {
+                "protein_per_100g": 0.9,
+                "carbs_per_100g": 0.1,
+                "fat_per_100g": 81,
+                "kcal_per_100g": 717,
+            },
+            "ceviz": {
+                "protein_per_100g": 15,
+                "carbs_per_100g": 14,
+                "fat_per_100g": 65,
+                "kcal_per_100g": 654,
+            },
+            "badem": {
+                "protein_per_100g": 21,
+                "carbs_per_100g": 22,
+                "fat_per_100g": 49,
+                "kcal_per_100g": 579,
+            },
         }
-    
+
     async def generate_meals_for_plan(
-        self, 
-        plan: DailyPlan, 
+        self,
+        plan: DailyPlan,
         profile: UserProfile,
-        excluded_ingredients: Optional[List[str]] = None
-    ) -> List[Meal]:
+        excluded_ingredients: list[str] | None = None,
+    ) -> list[Meal]:
         """
         Generate complete meal plan for the day to hit macro targets.
-        
+
         Args:
             plan: Daily plan with macro targets
             profile: User profile with preferences and restrictions
@@ -74,24 +177,24 @@ class MealGenAgent:
         if not self.client:
             # Fallback: generate simple meals without LLM
             return self._generate_fallback_meals(plan, profile)
-        
+
         try:
             meals = []
-            
+
             # Distribute calories across meals
             meal_distribution = {
                 "breakfast": 0.25,
-                "lunch": 0.35, 
+                "lunch": 0.35,
                 "dinner": 0.30,
-                "snack": 0.10
+                "snack": 0.10,
             }
-            
+
             for meal_type, calorie_ratio in meal_distribution.items():
                 target_kcal = int(plan.target_kcal * calorie_ratio)
                 target_protein = plan.target_protein_g * calorie_ratio
                 target_carbs = plan.target_carbs_g * calorie_ratio
                 target_fat = plan.target_fat_g * calorie_ratio
-                
+
                 meal = await self._generate_single_meal(
                     meal_type=meal_type,
                     target_kcal=target_kcal,
@@ -99,18 +202,18 @@ class MealGenAgent:
                     target_carbs=target_carbs,
                     target_fat=target_fat,
                     profile=profile,
-                    excluded_ingredients=excluded_ingredients
+                    excluded_ingredients=excluded_ingredients,
                 )
-                
+
                 if meal:
                     meals.append(meal)
-            
+
             return meals
-        
+
         except Exception as e:
             print(f"Error generating meals with LLM: {e}")
             return self._generate_fallback_meals(plan, profile)
-    
+
     async def _generate_single_meal(
         self,
         meal_type: str,
@@ -119,88 +222,95 @@ class MealGenAgent:
         target_carbs: float,
         target_fat: float,
         profile: UserProfile,
-        excluded_ingredients: Optional[List[str]] = None
-    ) -> Optional[Meal]:
+        excluded_ingredients: list[str] | None = None,
+    ) -> Meal | None:
         """Generate a single meal using GPT-4o function calling."""
-        
+
         # Prepare Turkish ingredients list
         available_ingredients = []
         for ingredient, nutrition in self.turkish_ingredients.items():
             if excluded_ingredients and ingredient in excluded_ingredients:
                 continue
             if ingredient not in profile.allergies:
-                available_ingredients.append({
-                    "name": ingredient,
-                    "nutrition_per_100g": nutrition
-                })
-        
+                available_ingredients.append(
+                    {"name": ingredient, "nutrition_per_100g": nutrition}
+                )
+
         # Create prompt
         system_prompt = f"""
         Sen Türk mutfağında uzman bir beslenme koçusun. Kullanıcı için {meal_type} önerisi hazırlaman gerek.
-        
+
         Hedef makrolar:
         - Kalori: {target_kcal} kcal
         - Protein: {target_protein:.1f}g
-        - Karbonhidrat: {target_carbs:.1f}g  
+        - Karbonhidrat: {target_carbs:.1f}g
         - Yağ: {target_fat:.1f}g
-        
+
         Kullanıcı profili:
         - Diyet kısıtlamaları: {', '.join(profile.dietary_restrictions) if profile.dietary_restrictions else 'Yok'}
         - Alerjiler: {', '.join(profile.allergies) if profile.allergies else 'Yok'}
         - Türk mutfağı tercihi: {'Evet' if profile.prefer_turkish_cuisine else 'Hayır'}
-        
+
         Mevcut malzemeler: {', '.join([ing['name'] for ing in available_ingredients])}
-        
+
         Lütfen bu malzemelerle, hedef makrolara yakın bir {meal_type} tarifi oluştur.
         Porsiyon miktarlarını gram olarak belirt.
         """
-        
+
         try:
             response = self.client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"{meal_type} için tarif öner"}
+                    {"role": "user", "content": f"{meal_type} için tarif öner"},
                 ],
-                functions=[{
-                    "name": "create_meal",
-                    "description": "Yemek tarifi oluştur",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "name": {"type": "string", "description": "Yemek adı"},
-                            "ingredients": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "name": {"type": "string"},
-                                        "amount": {"type": "number"},
-                                        "unit": {"type": "string"}
-                                    }
-                                }
+                functions=[
+                    {
+                        "name": "create_meal",
+                        "description": "Yemek tarifi oluştur",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string", "description": "Yemek adı"},
+                                "ingredients": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {"type": "string"},
+                                            "amount": {"type": "number"},
+                                            "unit": {"type": "string"},
+                                        },
+                                    },
+                                },
+                                "instructions": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                                "prep_time_minutes": {"type": "integer"},
+                                "cook_time_minutes": {"type": "integer"},
+                                "tags": {"type": "array", "items": {"type": "string"}},
                             },
-                            "instructions": {
-                                "type": "array",
-                                "items": {"type": "string"}
-                            },
-                            "prep_time_minutes": {"type": "integer"},
-                            "cook_time_minutes": {"type": "integer"},
-                            "tags": {"type": "array", "items": {"type": "string"}}
+                            "required": [
+                                "name",
+                                "ingredients",
+                                "instructions",
+                                "prep_time_minutes",
+                                "cook_time_minutes",
+                            ],
                         },
-                        "required": ["name", "ingredients", "instructions", "prep_time_minutes", "cook_time_minutes"]
                     }
-                }],
-                function_call={"name": "create_meal"}
+                ],
+                function_call={"name": "create_meal"},
             )
-            
+
             # Parse function call result
             function_call = response.choices[0].message.function_call
             meal_data = json.loads(function_call.arguments)
-            
+
             # Calculate nutrition from ingredients
             nutrition = self._calculate_meal_nutrition(meal_data["ingredients"])
-            
+
             meal = Meal(
                 meal_id=f"{meal_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
                 name=meal_data["name"],
@@ -214,27 +324,29 @@ class MealGenAgent:
                 prep_time_minutes=meal_data["prep_time_minutes"],
                 cook_time_minutes=meal_data["cook_time_minutes"],
                 tags=meal_data.get("tags", ["turkish"]),
-                difficulty="easy"
+                difficulty="easy",
             )
-            
+
             return meal
-            
+
         except Exception as e:
             print(f"Error generating meal with LLM: {e}")
             return None
-    
-    def _calculate_meal_nutrition(self, ingredients: List[Dict[str, Any]]) -> Dict[str, float]:
+
+    def _calculate_meal_nutrition(
+        self, ingredients: list[dict[str, Any]]
+    ) -> dict[str, float]:
         """Calculate total nutrition for a meal from ingredients."""
         total_kcal = 0
         total_protein = 0
         total_carbs = 0
         total_fat = 0
-        
+
         for ingredient in ingredients:
             name = ingredient["name"].lower()
             amount = ingredient["amount"]
             unit = ingredient["unit"]
-            
+
             # Convert to grams if needed
             if unit == "kg":
                 amount *= 1000
@@ -246,25 +358,27 @@ class MealGenAgent:
                 amount *= 100
             elif unit != "g":
                 amount *= 100  # Default fallback
-            
+
             # Look up nutrition info
             if name in self.turkish_ingredients:
                 nutrition = self.turkish_ingredients[name]
                 factor = amount / 100  # Nutrition is per 100g
-                
+
                 total_kcal += nutrition["kcal_per_100g"] * factor
                 total_protein += nutrition["protein_per_100g"] * factor
                 total_carbs += nutrition["carbs_per_100g"] * factor
                 total_fat += nutrition["fat_per_100g"] * factor
-        
+
         return {
             "kcal": round(total_kcal),
             "protein_g": round(total_protein, 1),
             "carbs_g": round(total_carbs, 1),
-            "fat_g": round(total_fat, 1)
+            "fat_g": round(total_fat, 1),
         }
-    
-    def _generate_fallback_meals(self, plan: DailyPlan, profile: UserProfile) -> List[Meal]:
+
+    def _generate_fallback_meals(
+        self, plan: DailyPlan, profile: UserProfile
+    ) -> list[Meal]:
         """Generate simple predefined meals when LLM is not available."""
         fallback_meals = [
             Meal(
@@ -280,19 +394,18 @@ class MealGenAgent:
                     {"name": "domates", "amount": 100, "unit": "g"},
                     {"name": "biber", "amount": 50, "unit": "g"},
                     {"name": "beyaz peynir", "amount": 30, "unit": "g"},
-                    {"name": "zeytinyağı", "amount": 5, "unit": "g"}
+                    {"name": "zeytinyağı", "amount": 5, "unit": "g"},
                 ],
                 instructions=[
                     "Sebzeleri doğrayın",
-                    "Tavada zeytinyağında soteleyin", 
+                    "Tavada zeytinyağında soteleyin",
                     "Yumurtaları ekleyip karıştırın",
-                    "Peyniri üzerine serpin"
+                    "Peyniri üzerine serpin",
                 ],
                 prep_time_minutes=5,
                 cook_time_minutes=10,
-                tags=["turkish", "quick", "vegetarian"]
+                tags=["turkish", "quick", "vegetarian"],
             ),
-            
             Meal(
                 meal_id=f"lunch_{datetime.now().strftime('%Y%m%d')}",
                 name="Grilled Chicken with Bulgur",
@@ -306,28 +419,25 @@ class MealGenAgent:
                     {"name": "bulgur", "amount": 80, "unit": "g"},
                     {"name": "domates", "amount": 100, "unit": "g"},
                     {"name": "salatalık", "amount": 100, "unit": "g"},
-                    {"name": "zeytinyağı", "amount": 10, "unit": "g"}
+                    {"name": "zeytinyağı", "amount": 10, "unit": "g"},
                 ],
                 instructions=[
                     "Tavuk göğsünü marine edin",
                     "Bulguru haşlayın",
                     "Tavuğu ızgarada pişirin",
-                    "Salata hazırlayın"
+                    "Salata hazırlayın",
                 ],
                 prep_time_minutes=15,
                 cook_time_minutes=20,
-                tags=["turkish", "high-protein", "balanced"]
-            )
+                tags=["turkish", "high-protein", "balanced"],
+            ),
         ]
-        
+
         return fallback_meals[:2]  # Return first 2 meals for demo
-    
+
     async def swap_meal(
-        self, 
-        meal_id: str, 
-        plan: DailyPlan, 
-        profile: UserProfile
-    ) -> Optional[Meal]:
+        self, meal_id: str, plan: DailyPlan, profile: UserProfile
+    ) -> Meal | None:
         """
         Generate a new meal to replace an existing one.
         Maintains the same calorie/macro targets.
@@ -338,13 +448,13 @@ class MealGenAgent:
             if isinstance(meal, dict) and meal.get("meal_id") == meal_id:
                 old_meal = meal
                 break
-            elif hasattr(meal, 'meal_id') and meal.meal_id == meal_id:
+            elif hasattr(meal, "meal_id") and meal.meal_id == meal_id:
                 old_meal = meal
                 break
-        
+
         if not old_meal:
             return None
-        
+
         # Extract targets from old meal
         if isinstance(old_meal, dict):
             target_kcal = old_meal.get("kcal", 400)
@@ -358,7 +468,7 @@ class MealGenAgent:
             target_carbs = old_meal.carbs_g
             target_fat = old_meal.fat_g
             meal_type = old_meal.meal_type
-        
+
         # Generate new meal with same targets
         new_meal = await self._generate_single_meal(
             meal_type=meal_type,
@@ -366,7 +476,7 @@ class MealGenAgent:
             target_protein=target_protein,
             target_carbs=target_carbs,
             target_fat=target_fat,
-            profile=profile
+            profile=profile,
         )
 
         return new_meal
@@ -375,8 +485,8 @@ class MealGenAgent:
         self,
         image: Any,
         recognizer,
-        profile: Optional[UserProfile] = None,
-    ) -> Dict[str, Any]:
+        profile: UserProfile | None = None,
+    ) -> dict[str, Any]:
         """Analyze meal image and suggest ingredient swaps."""
         macros = await recognizer.recognize_plate(image)
         if profile is None:
@@ -400,26 +510,23 @@ class MealGenAgent:
 
         swaps = self.get_ingredient_suggestions(gap)
         return {"macros": macros, "swaps": swaps}
-    
-    def get_ingredient_suggestions(
-        self, 
-        macro_gap: Dict[str, float]
-    ) -> List[str]:
+
+    def get_ingredient_suggestions(self, macro_gap: dict[str, float]) -> list[str]:
         """
         Suggest ingredients to fill remaining macro gaps.
-        
+
         Args:
             macro_gap: {"protein": X, "carbs": Y, "fat": Z} in grams
         """
         suggestions = []
-        
+
         if macro_gap.get("protein", 0) > 10:
             suggestions.extend(["tavuk göğsü", "yumurta", "lor peyniri", "balık"])
-        
+
         if macro_gap.get("carbs", 0) > 20:
             suggestions.extend(["bulgur", "pirinç", "mercimek", "nohut"])
-        
+
         if macro_gap.get("fat", 0) > 5:
             suggestions.extend(["zeytinyağı", "ceviz", "badem", "tereyağı"])
-        
+
         return suggestions[:3]  # Return top 3 suggestions
