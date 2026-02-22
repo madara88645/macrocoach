@@ -23,8 +23,7 @@ class MealGenAgent:
         self.context = context
         self.client = None
         if context.openai_api_key:
-            openai.api_key = context.openai_api_key
-            self.client = openai.OpenAI(api_key=context.openai_api_key)
+            self.client = openai.AsyncOpenAI(api_key=context.openai_api_key)
 
         # Turkish pantry staples (can be expanded)
         self.turkish_ingredients = {
@@ -258,7 +257,7 @@ class MealGenAgent:
         """
 
         try:
-            response = self.client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": system_prompt},

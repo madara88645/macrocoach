@@ -505,7 +505,7 @@ class ChatUIAgent:
             "user_id": user_id,
             "date": today.isoformat(),
             "daily_summary": summary,
-            "profile": profile.dict() if profile else None,
+            "profile": profile.model_dump(mode="json") if profile else None,
             "recent_metrics_count": len(recent_metrics),
         }
 

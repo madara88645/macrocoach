@@ -196,7 +196,8 @@ class StateStoreAgent:
     async def get_daily_summary(self, user_id: str, date: datetime) -> dict[str, Any]:
         """Get aggregated metrics for a specific day."""
         start_of_day = date.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_of_day = start_of_day + timedelta(days=1)
+        # Use the last microsecond of the day to avoid bleeding into the next day.
+        end_of_day = start_of_day + timedelta(days=1) - timedelta(microseconds=1)
 
         metrics = await self.get_health_metrics(user_id, start_of_day, end_of_day)
 
@@ -316,7 +317,7 @@ class StateStoreAgent:
                 plan.target_workout_minutes,
                 json.dumps(
                     [
-                        meal.dict() if hasattr(meal, "dict") else meal
+                        meal.model_dump() if hasattr(meal, "model_dump") else meal
                         for meal in plan.suggested_meals
                     ]
                 ),

@@ -88,6 +88,24 @@ class ChatResponse(BaseModel):
     status: str = "success"
 
 
+class ProfileCreateRequest(BaseModel):
+    """Request body for profile creation/update (user_id comes from the path)."""
+
+    age: int
+    gender: str
+    height_cm: float
+    activity_level: str
+    goal: str
+    target_weight_kg: float | None = None
+    target_kcal_deficit: int | None = None
+    protein_percent: float = 30.0
+    carbs_percent: float = 40.0
+    fat_percent: float = 30.0
+    dietary_restrictions: list[str] = []
+    allergies: list[str] = []
+    prefer_turkish_cuisine: bool = True
+
+
 @app.get("/")
 async def root() -> dict[str, str]:
     """Root endpoint with basic info."""
@@ -123,11 +141,11 @@ async def chat_endpoint(request: ChatRequest) -> ChatResponse:
 
 @app.post("/profile/{user_id}")
 async def create_or_update_profile(
-    user_id: str, profile: UserProfile
+    user_id: str, body: ProfileCreateRequest
 ) -> dict[str, Any]:
     """Create or update a user profile."""
     try:
-        profile.user_id = user_id
+        profile = UserProfile(user_id=user_id, **body.model_dump())
         await state_store.store_user_profile(profile)
         return {"status": "ok", "user_id": user_id}
     except Exception as e:
@@ -141,7 +159,7 @@ async def get_profile(user_id: str) -> dict[str, Any]:
         profile = await state_store.get_user_profile(user_id)
         if not profile:
             raise HTTPException(status_code=404, detail="Profile not found")
-        return profile.dict()
+        return profile.model_dump(mode="json")
     except HTTPException:
         raise
     except Exception as e:
