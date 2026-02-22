@@ -34,7 +34,7 @@ def main():
         
         st.header("🎯 Quick Actions")
         if st.button("📊 Refresh Data"):
-            st.experimental_rerun()
+            st.rerun()
         
         if st.button("💬 Open Chat"):
             st.session_state.show_chat = True
@@ -237,7 +237,7 @@ def send_quick_message(message: str, user_id: str):
         bot_response = f"Connection error: {str(e)}"
     
     st.session_state.messages.append({"role": "assistant", "content": bot_response})
-    st.experimental_rerun()
+    st.rerun()
 
 def show_data_entry():
     """Show manual data entry form."""

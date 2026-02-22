@@ -2,6 +2,7 @@
 FastAPI main application entry point.
 """
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -26,16 +27,36 @@ from .agents.planner_agent import PlannerAgent
 from .agents.meal_gen_agent import MealGenAgent
 from .vision import PlateRecognizer
 from .core.context import ApplicationContext
+from .core.models import UserProfile
 
 # Load environment variables
 load_dotenv()
+
+# Initialize application context and agents
+context = ApplicationContext()
+state_store = StateStoreAgent(context)
+planner = PlannerAgent(context)
+meal_gen = MealGenAgent(context)
+chat_ui = ChatUIAgent(context, state_store, planner, meal_gen)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize and clean up application resources."""
+    await state_store.initialize()
+    print("MacroCoach API started successfully!")
+    yield
+    await state_store.close()
+    print("MacroCoach API shut down.")
+
 
 app = FastAPI(
     title="MacroCoach API",
     description="An open-source coaching service for health metrics and nutrition",
     version="0.1.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # CORS middleware
@@ -46,13 +67,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Initialize application context and agents
-context = ApplicationContext()
-state_store = StateStoreAgent(context)
-planner = PlannerAgent(context)
-meal_gen = MealGenAgent(context)
-chat_ui = ChatUIAgent(context, state_store, planner, meal_gen)
 
 
 def get_plate_recognizer() -> PlateRecognizer:
@@ -68,20 +82,6 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     status: str = "success"
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize the application on startup."""
-    await state_store.initialize()
-    print("MacroCoach API started successfully!")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Clean up resources on shutdown."""
-    await state_store.close()
-    print("MacroCoach API shut down.")
 
 
 @app.get("/")
@@ -113,6 +113,31 @@ async def chat_endpoint(request: ChatRequest) -> ChatResponse:
     try:
         response = await chat_ui.process_message(request.message, request.user_id)
         return ChatResponse(response=response)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/profile/{user_id}")
+async def create_or_update_profile(user_id: str, profile: UserProfile) -> Dict[str, Any]:
+    """Create or update a user profile."""
+    try:
+        profile.user_id = user_id
+        await state_store.store_user_profile(profile)
+        return {"status": "ok", "user_id": user_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/profile/{user_id}")
+async def get_profile(user_id: str) -> Dict[str, Any]:
+    """Retrieve user profile."""
+    try:
+        profile = await state_store.get_user_profile(user_id)
+        if not profile:
+            raise HTTPException(status_code=404, detail="Profile not found")
+        return profile.dict()
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

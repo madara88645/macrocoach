@@ -344,23 +344,75 @@ class ChatUIAgent:
     async def _handle_profile_command(self, user_id: str, data: str) -> str:
         """Handle /profile command - update user profile."""
         
-        # This is a simplified profile creation
-        # In a real app, you'd have a proper profile setup flow
+        if not data.strip():
+            existing = await self.state_store.get_user_profile(user_id)
+            if existing:
+                return (
+                    f"👤 **Your Profile:**\n"
+                    f"• Age: {existing.age}\n"
+                    f"• Gender: {existing.gender}\n"
+                    f"• Height: {existing.height_cm} cm\n"
+                    f"• Activity: {existing.activity_level}\n"
+                    f"• Goal: {existing.goal}\n\n"
+                    "To update, provide: `age: 25, gender: male, height: 175cm, activity: moderately_active, goal: lose_weight`"
+                )
+            return (
+                "👤 **Profile Setup**\n\n"
+                "Please provide your details in this format:\n"
+                "`age: 25, gender: male, height: 175cm, activity: moderately_active, goal: lose_weight`\n\n"
+                "**Activity levels:** sedentary | lightly_active | moderately_active | very_active | extremely_active\n"
+                "**Goals:** lose_weight | maintain_weight | gain_weight | gain_muscle"
+            )
         
-        return ("👤 **Profile Setup**\n\n"
-               "Please provide your details in this format:\n"
-               "`age: 25, gender: male, height: 175cm, activity: moderately_active, goal: lose_weight`\n\n"
-               "**Activity levels:**\n"
-               "• sedentary\n"
-               "• lightly_active\n" 
-               "• moderately_active\n"
-               "• very_active\n"
-               "• extremely_active\n\n"
-               "**Goals:**\n"
-               "• lose_weight\n"
-               "• maintain_weight\n"
-               "• gain_weight\n"
-               "• gain_muscle")
+        # Parse key: value pairs
+        parsed: dict = {}
+        for part in re.split(r",\s*", data):
+            if ":" in part:
+                key, _, value = part.partition(":")
+                parsed[key.strip().lower()] = value.strip().lower()
+        
+        try:
+            missing = [f for f in ("age", "gender", "height") if f not in parsed]
+            if missing:
+                raise ValueError(f"Missing required fields: {', '.join(missing)}")
+
+            age = int(parsed["age"])
+            gender = parsed["gender"]
+
+            # Extract numeric part only (handle values like "175cm")
+            height_raw = re.search(r"[\d.]+", parsed["height"])
+            if height_raw is None:
+                raise ValueError("height must be a number (e.g. 175cm)")
+            height_cm = float(height_raw.group())
+
+            activity = parsed.get("activity", "moderately_active")
+            goal = parsed.get("goal", "maintain_weight")
+
+            weight_raw = parsed.get("weight", "")
+            weight_match = re.search(r"[\d.]+", weight_raw) if weight_raw else None
+            weight = float(weight_match.group()) if weight_match else None
+            
+            profile = UserProfile(
+                user_id=user_id,
+                age=age,
+                gender=gender,
+                height_cm=height_cm,
+                activity_level=activity,
+                goal=goal,
+                target_weight_kg=weight,
+            )
+            await self.state_store.store_user_profile(profile)
+            return (
+                f"✅ **Profile saved!**\n"
+                f"• Age: {age} | Gender: {gender} | Height: {height_cm} cm\n"
+                f"• Activity: {activity} | Goal: {goal}\n"
+                f"\nUse /plan to get your first nutrition plan!"
+            )
+        except (ValueError, KeyError) as exc:
+            return (
+                f"❌ Could not parse profile data ({exc}). Please use the format:\n"
+                "`age: 25, gender: male, height: 175cm, activity: moderately_active, goal: lose_weight`"
+            )
     
     async def _handle_natural_language(self, message: str, user_id: str) -> str:
         """Handle natural language queries."""

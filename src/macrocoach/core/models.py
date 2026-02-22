@@ -4,7 +4,7 @@ Data models and schemas for the application.
 
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 
 
@@ -51,10 +51,8 @@ class HealthMetric(BaseModel):
     # Metadata
     source: Optional[str] = Field(None, description="Data source (healthkit, health_connect, manual, etc.)")
     confidence: Optional[float] = Field(1.0, description="Data confidence 0-1")
-    
-    class Config:
-        """Pydantic config."""
-        use_enum_values = True
+
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class UserProfile(BaseModel):
