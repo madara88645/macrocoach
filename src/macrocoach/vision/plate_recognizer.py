@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import io
 import json
-from typing import Any, Dict
+from typing import Any
 
 try:
     from PIL import Image  # type: ignore
@@ -26,7 +26,7 @@ class PlateRecognizer:
         if api_key and openai is not None:
             self.client = openai.AsyncOpenAI(api_key=api_key)
 
-    async def recognize_plate(self, image: Any) -> Dict[str, Any]:
+    async def recognize_plate(self, image: Any) -> dict[str, Any]:
         """Return macro estimation for the provided image."""
         if self.client is None:
             raise RuntimeError("OpenAI client not configured")
@@ -49,9 +49,7 @@ class PlateRecognizer:
                         {"type": "text", "text": prompt},
                         {
                             "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{b64}"
-                            },
+                            "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
                         },
                     ],
                 }
@@ -69,5 +67,3 @@ class PlateRecognizer:
                 "fat_g": 0,
                 "confidence": 0,
             }
-
-

@@ -72,3 +72,4 @@ poetry.lock
 .mypy_cache/
 .dmypy.json
 dmypy.json
+=24.3.0

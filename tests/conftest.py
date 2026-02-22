@@ -2,15 +2,16 @@
 Test fixtures and configuration.
 """
 
-import pytest
-import tempfile
 import os
+import tempfile
+from collections.abc import Generator
 from datetime import datetime
-from typing import Generator
 
-from src.macrocoach.core.context import ApplicationContext
-from src.macrocoach.core.models import UserProfile, HealthMetric
+import pytest
+
 from src.macrocoach.agents.state_store_agent import StateStoreAgent
+from src.macrocoach.core.context import ApplicationContext
+from src.macrocoach.core.models import HealthMetric, UserProfile
 
 
 @pytest.fixture
@@ -18,9 +19,9 @@ def temp_db() -> Generator[str, None, None]:
     """Create a temporary database for testing."""
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
         db_path = tmp.name
-    
+
     yield f"sqlite:///{db_path}"
-    
+
     # Cleanup
     if os.path.exists(db_path):
         os.unlink(db_path)
@@ -50,7 +51,7 @@ def test_user_profile() -> UserProfile:
         protein_percent=30.0,
         carbs_percent=40.0,
         fat_percent=30.0,
-        prefer_turkish_cuisine=True
+        prefer_turkish_cuisine=True,
     )
 
 
@@ -68,7 +69,7 @@ def test_health_metric() -> HealthMetric:
         carbs_g=250.0,
         fat_g=80.0,
         kcal_in=2000.0,
-        source="test"
+        source="test",
     )
 
 
