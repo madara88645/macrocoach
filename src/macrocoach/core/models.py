@@ -2,6 +2,8 @@
 Data models and schemas for the application.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 from enum import StrEnum
 from typing import Any
@@ -111,7 +113,7 @@ class DailyPlan(BaseModel):
     target_workout_minutes: int = 30
 
     # Meals
-    suggested_meals: list[dict[str, Any]] = Field(default_factory=list)
+    suggested_meals: list[Meal | dict[str, Any]] = Field(default_factory=list)
 
     # Reasoning
     plan_reasoning: str = ""

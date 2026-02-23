@@ -4,10 +4,10 @@ ChatUIAgent - Exposes conversational endpoint for user interactions.
 
 import re
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from ..core.context import ApplicationContext
-from ..core.models import ChatMessage, HealthMetric, UserProfile, WorkoutType
+from ..core.models import ChatMessage, HealthMetric, Meal, UserProfile, WorkoutType
 from .meal_gen_agent import MealGenAgent
 from .planner_agent import PlannerAgent
 from .state_store_agent import StateStoreAgent
@@ -47,7 +47,7 @@ class ChatUIAgent:
         """
         message = message.strip()
         command_type = None
-        context_data = {}
+        context_data: dict[str, Any] = {}
 
         try:
             # Parse command
@@ -197,7 +197,7 @@ class ChatUIAgent:
 
         # Generate meals
         meals = await self.meal_gen.generate_meals_for_plan(plan, profile)
-        plan.suggested_meals = meals
+        plan.suggested_meals = cast(list[Meal | dict[str, Any]], meals)
 
         # Store the plan
         await self.state_store.store_daily_plan(plan)
@@ -216,13 +216,12 @@ class ChatUIAgent:
         ]
 
         for i, meal in enumerate(meals[:3], 1):  # Show first 3 meals
-            meal_obj = meal if hasattr(meal, "name") else type("obj", (object,), meal)()
             response_parts.extend(
                 [
-                    f"\n**{i}. {meal_obj.name}** ({meal_obj.meal_type})",
-                    f"   • {meal_obj.kcal} kcal, {meal_obj.protein_g:.0f}g protein",
-                    f"   • Prep: {meal_obj.prep_time_minutes}min | Cook: {meal_obj.cook_time_minutes}min",
-                    f"   • ID: `{meal_obj.meal_id}`",
+                    f"\n**{i}. {meal.name}** ({meal.meal_type})",
+                    f"   • {meal.kcal} kcal, {meal.protein_g:.0f}g protein",
+                    f"   • Prep: {meal.prep_time_minutes}min | Cook: {meal.cook_time_minutes}min",
+                    f"   • ID: `{meal.meal_id}`",
                 ]
             )
 

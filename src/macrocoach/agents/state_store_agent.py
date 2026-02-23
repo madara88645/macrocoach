@@ -154,7 +154,7 @@ class StateStoreAgent:
         conn = self.context.get_db_connection()
 
         query = "SELECT * FROM health_metrics WHERE user_id = ?"
-        params = [user_id]
+        params: list[Any] = [user_id]
 
         if start_date:
             query += " AND timestamp >= ?"

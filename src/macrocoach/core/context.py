@@ -52,7 +52,7 @@ class ApplicationContext:
     _db_connection: sqlite3.Connection | None = field(default=None, init=False)
     _user_sessions: dict[str, dict[str, Any]] = field(default_factory=dict, init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Initialize context after creation."""
         self._ensure_database_exists()
 
@@ -61,8 +61,8 @@ class ApplicationContext:
         if self.database_url.startswith("sqlite:///"):
             db_path = self.database_url.replace("sqlite:///", "")
             if not db_path.startswith("/"):  # Relative path
-                db_path = Path(db_path)
-                db_path.parent.mkdir(parents=True, exist_ok=True)
+                db_path_obj = Path(db_path)
+                db_path_obj.parent.mkdir(parents=True, exist_ok=True)
 
     def get_db_connection(self) -> sqlite3.Connection:
         """Get or create database connection."""

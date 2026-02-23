@@ -50,7 +50,7 @@ class HealthKitConnector(BaseConnector):
         In real implementation: Check if device supports HealthKit.
         """
         # Mock availability check
-        return self.config.get("enabled", False)
+        return bool(self.config.get("enabled", False))
 
     async def get_health_metrics(
         self, start_date: datetime, end_date: datetime
