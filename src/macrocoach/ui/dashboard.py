@@ -21,7 +21,7 @@ st.set_page_config(
 )
 
 
-def main():
+def main() -> None:
     """Main dashboard application."""
 
     st.title("🏃‍♂️ MacroCoach Dashboard")
@@ -49,7 +49,7 @@ def main():
         show_chat_interface(user_id)
 
 
-def show_dashboard(user_id: str):
+def show_dashboard(user_id: str) -> None:
     """Display the main dashboard."""
 
     st.header("📊 Today's Overview")
@@ -165,7 +165,7 @@ def show_dashboard(user_id: str):
         st.error(f"Error loading dashboard: {str(e)}")
 
 
-def show_chat_interface(user_id: str):
+def show_chat_interface(user_id: str) -> None:
     """Display the chat interface."""
 
     st.header("💬 Chat with MacroCoach")
@@ -227,7 +227,7 @@ def show_chat_interface(user_id: str):
             send_quick_message("/plan", user_id)
 
 
-def send_quick_message(message: str, user_id: str):
+def send_quick_message(message: str, user_id: str) -> None:
     """Send a quick message and display response."""
 
     st.session_state.messages.append({"role": "user", "content": message})
@@ -250,7 +250,7 @@ def send_quick_message(message: str, user_id: str):
     st.rerun()
 
 
-def show_data_entry():
+def show_data_entry() -> None:
     """Show manual data entry form."""
 
     st.header("📝 Log Data")

@@ -3,6 +3,7 @@ FastAPI main application entry point.
 """
 
 import io
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -21,8 +22,8 @@ try:
     from dotenv import load_dotenv
 except ImportError:
     # dotenv is optional
-    def load_dotenv():
-        pass
+    def load_dotenv(**kwargs: Any) -> bool:  # type: ignore[misc]
+        return False
 
 
 from .agents.chat_ui_agent import ChatUIAgent
@@ -45,7 +46,7 @@ chat_ui = ChatUIAgent(context, state_store, planner, meal_gen)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Initialize and clean up application resources."""
     await state_store.initialize()
     print("MacroCoach API started successfully!")
