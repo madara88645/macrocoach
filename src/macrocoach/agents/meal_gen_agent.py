@@ -5,12 +5,15 @@ Constraint: Turkish pantry items preferred.
 
 import json
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import openai
 
 from ..core.context import ApplicationContext
 from ..core.models import DailyPlan, Meal, UserProfile
+
+if TYPE_CHECKING:
+    from ..vision.plate_recognizer import PlateRecognizer
 
 
 class MealGenAgent:
@@ -26,7 +29,7 @@ class MealGenAgent:
             self.client = openai.AsyncOpenAI(api_key=context.openai_api_key)
 
         # Turkish pantry staples (can be expanded)
-        self.turkish_ingredients = {
+        self.turkish_ingredients: dict[str, dict[str, float]] = {
             # Grains & Legumes
             "bulgur": {
                 "protein_per_100g": 12,
@@ -226,7 +229,7 @@ class MealGenAgent:
         """Generate a single meal using GPT-4o function calling."""
 
         # Prepare Turkish ingredients list
-        available_ingredients = []
+        available_ingredients: list[dict[str, Any]] = []
         for ingredient, nutrition in self.turkish_ingredients.items():
             if excluded_ingredients and ingredient in excluded_ingredients:
                 continue
@@ -250,13 +253,14 @@ class MealGenAgent:
         - Alerjiler: {', '.join(profile.allergies) if profile.allergies else 'Yok'}
         - Türk mutfağı tercihi: {'Evet' if profile.prefer_turkish_cuisine else 'Hayır'}
 
-        Mevcut malzemeler: {', '.join([ing['name'] for ing in available_ingredients])}
+        Mevcut malzemeler: {', '.join([str(ing['name']) for ing in available_ingredients])}
 
         Lütfen bu malzemelerle, hedef makrolara yakın bir {meal_type} tarifi oluştur.
         Porsiyon miktarlarını gram olarak belirt.
         """
 
         try:
+            assert self.client is not None
             response = await self.client.chat.completions.create(
                 model="gpt-4",
                 messages=[
@@ -305,6 +309,7 @@ class MealGenAgent:
 
             # Parse function call result
             function_call = response.choices[0].message.function_call
+            assert function_call is not None
             meal_data = json.loads(function_call.arguments)
 
             # Calculate nutrition from ingredients
@@ -442,7 +447,7 @@ class MealGenAgent:
         Maintains the same calorie/macro targets.
         """
         # Find the meal to replace
-        old_meal = None
+        old_meal: Meal | dict[str, Any] | None = None
         for meal in plan.suggested_meals:
             if isinstance(meal, dict) and meal.get("meal_id") == meal_id:
                 old_meal = meal
@@ -483,7 +488,7 @@ class MealGenAgent:
     async def analyze_image(
         self,
         image: Any,
-        recognizer,
+        recognizer: "PlateRecognizer",
         profile: UserProfile | None = None,
     ) -> dict[str, Any]:
         """Analyze meal image and suggest ingredient swaps."""

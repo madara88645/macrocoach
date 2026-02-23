@@ -28,7 +28,8 @@ class StateStoreAgent:
         conn = self.context.get_db_connection()
 
         # Create tables
-        conn.executescript("""
+        conn.executescript(
+            """
             CREATE TABLE IF NOT EXISTS health_metrics (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp TEXT NOT NULL,
@@ -102,7 +103,8 @@ class StateStoreAgent:
                 ON daily_plans(user_id, date);
             CREATE INDEX IF NOT EXISTS idx_chat_messages_user_timestamp
                 ON chat_messages(user_id, timestamp);
-        """)
+        """
+        )
 
         conn.commit()
         self._initialized = True
@@ -152,7 +154,7 @@ class StateStoreAgent:
         conn = self.context.get_db_connection()
 
         query = "SELECT * FROM health_metrics WHERE user_id = ?"
-        params = [user_id]
+        params: list[Any] = [user_id]
 
         if start_date:
             query += " AND timestamp >= ?"

@@ -249,7 +249,7 @@ class PlannerAgent:
             return {"error": "No recent metrics available"}
 
         # Calculate averages
-        daily_summaries = {}
+        daily_summaries: dict[str, dict[str, Any]] = {}
         for metric in recent_metrics:
             date_str = metric.timestamp.date().isoformat()
             if date_str not in daily_summaries:

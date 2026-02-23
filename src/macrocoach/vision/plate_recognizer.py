@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import io
 import json
-from typing import Any
+from typing import Any, cast
 
 try:
     from PIL import Image  # type: ignore
@@ -58,7 +58,7 @@ class PlateRecognizer:
         )
         content = resp.choices[0].message.content or "{}"
         try:
-            return json.loads(content)
+            return cast(dict[str, Any], json.loads(content))
         except json.JSONDecodeError:  # pragma: no cover - invalid json fallback
             return {
                 "kcal": 0,
