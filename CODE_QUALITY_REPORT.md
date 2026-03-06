@@ -1,4 +1,4 @@
-# Code Quality Report (Agent 1)
+# Code Quality Report
 
 Date: 2026-03-06  
 Repository: `macrocoach`
@@ -10,7 +10,7 @@ This report captures a **non-invasive quality assessment** (no production code c
 ## Tooling results
 
 - **Ruff lint:** `ruff check src tests` ✅ passed.
-- **Mypy typing:** `mypy src` ❌ failed due to missing third-party type stubs (`requests`).
+- **Mypy typing:** `mypy src` ❌ failed due to missing third-party type stubs (`requests`). Note: `types-requests` is already declared under `[tool.poetry.group.dev.dependencies]` in `pyproject.toml`, but is absent from `requirements-dev.txt`. To fix, either install dependencies via Poetry (`poetry install --with dev`) or add `types-requests` to `requirements-dev.txt` to align both install paths.
 - **Pytest run:** `pytest -q -o addopts=''` ❌ failed, mostly due to missing async test plugin support (`pytest-asyncio`), plus async marker/config warnings.
 - **Dependency install attempt:** `pip install -r requirements-dev.txt` ⚠️ blocked by proxy/network restrictions while resolving `pytest-asyncio`.
 
@@ -73,10 +73,11 @@ This weakens structured telemetry and makes production debugging harder.
 - `mypy` stops on missing stubs for `requests` in the Streamlit dashboard.
 
 **Recommendation**
-- Ensure `types-requests` is installed in CI/dev images.
+- `types-requests` is already declared in `pyproject.toml` dev dependencies; add it to `requirements-dev.txt` as well so both install paths are consistent.
+- Prefer `poetry install --with dev` in CI to ensure all declared dev dependencies (including `types-requests`) are present.
 - Keep `mypy src` as required status check once environment parity is fixed.
 
-## Prioritized refactoring queue for Agent 3
+## Prioritized refactoring queue
 
 1. **Error handling hardening:** sanitize HTTP errors and centralize exception mapping.
 2. **Meal generation decomposition:** split prompt builder, LLM adapter, and result mapper.
