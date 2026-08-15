@@ -147,11 +147,6 @@ The normalized health metrics schema:
 - GPT-4o vision for plate recognition
 - Advanced workout planning algorithms
 
-## 📝 Personal Notes (Memo)
-
-- CI of ~10k steps/day & 2g/kg protein → strength gains plateaued in June
-- Primary lag is evening calorie drift → emphasise snack swaps
-
 ## 🤝 Contributing
 
 1. Fork the repository
